@@ -1,0 +1,24 @@
+{
+  "name": "supreme-court",
+  "version": "1.0.0",
+  "description": "Supreme Court prediction model, using machine learning and argument transcripts.",
+  "main": "main.js",
+  "dependencies": {
+    "mz": "^2.4.0",
+    "pdfjs-dist": "^1.5.355"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CoryMcCartan/supreme-court.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CoryMcCartan/supreme-court/issues"
+  },
+  "homepage": "https://github.com/CoryMcCartan/supreme-court#readme"
+}
