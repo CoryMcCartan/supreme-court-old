@@ -4,8 +4,12 @@
   "description": "Supreme Court prediction model, using machine learning and argument transcripts.",
   "main": "main.js",
   "dependencies": {
+    "cheerio": "^0.20.0",
+    "fast-csv": "^2.1.0",
     "mz": "^2.4.0",
-    "pdfjs-dist": "^1.5.355"
+    "node-fetch": "^1.6.0",
+    "pdfjs-dist": "^1.5.355",
+    "yargs": "^4.8.1"
   },
   "devDependencies": {},
   "scripts": {
