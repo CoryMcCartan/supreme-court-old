@@ -8,59 +8,61 @@
  */
 
 let args = require("yargs")
+    .default("k", 10)
     .default("n", 150).alias("n", "num_steps")
-    .default("o", 3).alias("o", "optimize_steps")
+    .default("o", 100).alias("o", "optimize_steps")
     .default("feature_file", "data/features.csv")
     .default("out_file", "data/thresholds.csv")
     .help("h").alias("h", "help")
     .argv;
-let csv = require("fast-csv");
-let bayes = require("./bayes.js")
+let bayes = require("./bayes.js");
+let util = require("./util.js");
+let optimizer = require("./lib/nelder-mead.js");
 
 const PETITIONER = 1;
 const RESPONDENT = 0;
 
-function main() {
-    loadCSV(args.feature_file).then(data => {
-        prepData(data);
+function * main() {
+    let data = yield util.loadCSV(args.feature_file);
 
-        // split train/test
-        let amount = Math.ceil(0.1 * data.length);
-        let test_data = data.slice(0, amount);
-        let train_data = data.slice(amount);
+    util.prepData(data);
 
-        let thresholds = findThresholds(train_data);      
+    let accuracy = 0;
+    let precision = 0;
+    let recall = 0;
+    let positive_rate = 0;
+    let thresholds = [];
 
-        console.log("");
-        for (let item of thresholds) 
-            console.log(`KEY: ${pad(item.key, 20)}  THRESHOLD: ${item.threshold}`);
+    for (let [train_data, test_data] of util.crossValidate(data, args.k)) {
+        thresholds = findThresholds(train_data, thresholds.slice(1));
 
         let [
-            accuracy,
-            precision,
-            recall,
-            positive_rate
+            t_accuracy,
+            t_precision,
+            t_recall,
+            t_positive_rate
         ] = bayes.evaluate(thresholds[0].likelihood, thresholds.slice(1), test_data);
 
+        accuracy += t_accuracy / args.k;
+        precision += t_precision / args.k;
+        recall += t_recall / args.k;
+        positive_rate += t_positive_rate / args.k;
+
         console.log("");
-        console.log(`ACCURACY: ${(100 * accuracy).toFixed(2)}%`);
-        console.log(`PRECISION: ${(100 * precision).toFixed(2)}%`);
-        console.log(`RECALL: ${(100 * recall).toFixed(2)}%`);
-        console.log(`POSITIVE RATE: ${(100 * positive_rate).toFixed(2)}%`);
-
-        csv.writeToPath(args.out_file, thresholds, {headers: true});
-    });
-}
-
-function prepData(data) {
-    for (let entry of data) {
-        entry.votes = entry.side === PETITIONER ? 
-            entry.margin : entry.j_num - entry.margin;
     }
+
+    console.log("");
+    console.log(`ACCURACY: ${(100 * accuracy).toFixed(2)}%`);
+    console.log(`PRECISION: ${(100 * precision).toFixed(2)}%`);
+    console.log(`RECALL: ${(100 * recall).toFixed(2)}%`);
+    console.log(`POSITIVE RATE: ${(100 * positive_rate).toFixed(2)}%`);
+
+    util.writeCSV(args.out_file, thresholds);
 }
 
-function findThresholds(data) {
+function findThresholds(data, _thresholds = []) {
     let x_keys = [
+        "p_minus_r",
         "p_interruptions",
         "p_words",
         "p_times",
@@ -82,39 +84,57 @@ function findThresholds(data) {
     ];
 
     let thresholds = [];
-    let prior = mean(data, "side");
-    for (let key of x_keys) {
-        let [
-            threshold,
-            likelihood,
-            evidence,
-            mean_pet,
-            var_pet,
-            mean_resp,
-            var_resp,
-        ] = baselineThreshold(data, key);
+    let prior = util.mean(data, "side");
+    if (_thresholds.length) {
+       thresholds = _thresholds; 
+    } else {
+        for (let key of x_keys) {
+            let [
+                threshold,
+                likelihood,
+                evidence,
+                mean_pet,
+                var_pet,
+                mean_resp,
+                var_resp,
+            ] = baselineThreshold(data, key);
 
-        thresholds.push({
-            key,
-            threshold,
-            likelihood,
-            evidence,
-            mean_pet,
-            var_pet,
-            mean_resp,
-            var_resp,
-        });
-    }
-
-
-    console.log(`PRIOR ACCURACY ${bayes.evaluate(prior, thresholds, data)[0]}`);
-    for (let i = 0; i < args.optimize_steps; i++) { // several passes through data
-        console.log(`\nOPTIMIZING STEP ${i+1}`);
-        for (let variable of thresholds) {
-            variable = optimizeThreshold(data, variable, thresholds, prior);
+            thresholds.push({
+                key,
+                threshold,
+                likelihood,
+                evidence,
+                mean_pet,
+                var_pet,
+                mean_resp,
+                var_resp,
+            });
         }
-        console.log(`ACCURACY ${bayes.evaluate(prior, thresholds, data)[0]}`);
     }
+
+    console.log(`PRIOR ACCURACY ${Math.round(100 * bayes.evaluate(prior, thresholds, data)[0])}%`);
+
+    for (let variable of thresholds) {
+        variable = optimizeThreshold(data, variable, thresholds, prior);
+    }
+
+    let n = thresholds.length;
+    let func = thresh => {
+        for (let i = 0; i < n; i++) {
+            thresholds[i].threshold = thresh[i]; 
+        }
+
+        let [accuracy, , , positive_rate] = bayes.evaluate(prior, thresholds, data);
+        return -accuracy - 0.1*Math.abs(prior - positive_rate);    
+    };
+    let bounds = x_keys.map(key => util.range(data, key))
+
+    let results = optimizer.NM(func, thresholds.map(t => t.threshold), 
+                               bounds, args.optimize_steps);
+    for (let i = 0; i < n; i++) {
+        thresholds[i].threshold = results.x[i]; 
+    }
+    console.log(`ACCURACY ${Math.round(100 * bayes.evaluate(prior, thresholds, data)[0])}%`);
 
     thresholds.unshift({
         key: "prior",
@@ -124,22 +144,22 @@ function findThresholds(data) {
         mean_pet: 0,
         var_pet: 0,
         mean_resp: 0,
-        var_resp: 0,
+        var_resp: 0, 
     });
 
     return thresholds;
 }
 
 function baselineThreshold(data, key) {
-    let wins_only = data.filter(x => +x.side === PETITIONER);
-    let threshold = mean(data, key);
+    let wins_only = data.filter(x => x.side === PETITIONER);
+    let threshold = util.mean(data, key);
 
-    let likelihood = mean(wins_only.map(x => +x[key] > threshold ? 1 : 0));
-    let evidence = mean(data.map(x => +x[key] > threshold ? 1 : 0));
-    let mean_pet = mean(wins_only, key);
-    let var_pet = variance(wins_only, key);
-    let mean_resp = mean(data, key, x => +x.side === RESPONDENT);
-    let var_resp = variance(data, key, x => +x.side === RESPONDENT);
+    let likelihood = util.mean(wins_only.map(x => x[key] > threshold ? 1 : 0));
+    let evidence = util.mean(data.map(x => x[key] > threshold ? 1 : 0));
+    let mean_pet = util.mean(wins_only, key);
+    let var_pet = util.variance(wins_only, key);
+    let mean_resp = util.mean(data, key, x => x.side === RESPONDENT);
+    let var_resp = util.variance(data, key, x => x.side === RESPONDENT);
 
     return [
         threshold,
@@ -152,53 +172,16 @@ function baselineThreshold(data, key) {
     ];
 } 
 
-function findThreshold(data, key) {
-    let [min, max] = range(data, key);
-
-    let bestThreshold;
-    let bestPower = -Infinity;
-    let wins_only = data.filter(x => +x.side === PETITIONER);
-    for (let threshold of steps(min, max)) {
-        let likelihood = mean(wins_only.map(x => +x[key] > threshold));
-        let evidence = mean(data.map(x => +x[key] > threshold));
-
-        let power = Math.abs(likelihood / evidence);
-
-        if (power > bestPower) {
-            bestPower = power;
-            bestThreshold = threshold;
-        }
-    } 
-
-    let likelihood = mean(wins_only.map(x => +x[key] > bestThreshold ? 1 : 0));
-    let evidence = mean(data.map(x => +x[key] > bestThreshold ? 1 : 0));
-    let mean_pet = mean(wins_only, key);
-    let var_pet = variance(wins_only, key);
-    let mean_resp = mean(data, key, x => +x.side === RESPONDENT);
-    let var_resp = variance(data, key, x => +x.side === RESPONDENT);
-
-    return [
-        bestThreshold,
-        bestPower,
-        likelihood,
-        evidence,
-        mean_pet,
-        var_pet,
-        mean_resp,
-        var_resp,
-    ];
-} 
-
 function optimizeThreshold(data, variable, thresholds, prior) {
     let key = variable.key
-    let [min, max] = range(data, key);
+    let [min, max] = util.range(data, key);
 
     let bestThreshold;
     let bestAccuracy = 0;
-    let wins_only = data.filter(x => +x.side === PETITIONER);
+    let wins_only = data.filter(x => x.side === PETITIONER);
     for (let threshold of steps(min, max)) {
-        variable.likelihood = mean(wins_only.map(x => +x[key] > threshold));
-        variable.evidence = mean(data.map(x => +x[key] > threshold));
+        variable.likelihood = util.mean(wins_only.map(x => x[key] > threshold));
+        variable.evidence = util.mean(data.map(x => x[key] > threshold));
         variable.threshold = threshold;
 
         let [accuracy, precision, recall] = bayes.evaluate(prior, thresholds, data);
@@ -209,50 +192,11 @@ function optimizeThreshold(data, variable, thresholds, prior) {
         }
     } 
 
-    variable.likelihood = mean(wins_only.map(x => +x[key] > bestThreshold ? 1 : 0));
-    variable.evidence = mean(data.map(x => +x[key] > bestThreshold ? 1 : 0));
+    variable.likelihood = util.mean(wins_only.map(x => x[key] > bestThreshold ? 1 : 0));
+    variable.evidence = util.mean(data.map(x => x[key] > bestThreshold ? 1 : 0));
     variable.threshold = bestThreshold;
 
     return variable;
-}
-
-function mean(data, key, criteria) {
-    let array = extract(data, key, criteria);
-    
-    let sum = 0;
-    let length = array.length;
-    for (let i = 0; i < length; i++) {
-        sum += array[i];
-    }
-
-    return sum / length;
-}
-
-function variance(data, key, criteria, sample=true, _mean) {
-    let array = extract(data, key, criteria);
-
-    if (!_mean)
-        _mean = mean(array);
-
-    array = array.map(x => Math.pow(x - _mean, 2)); // squared differences
-
-    return mean(array);
-}
-
-function range(data, key) {
-    let array = extract(data, key);
-
-    let min = Infinity;
-    let max = -Infinity;
-    let length = array.length;
-    for (let i = 0; i < length; i++) {
-        if (array[i] < min)
-            min = array[i];
-        if (array[i] > max)
-            max = array[i];
-    }
-
-    return [min, max];
 }
 
 function * steps(min, max) {
@@ -263,39 +207,5 @@ function * steps(min, max) {
     }
 }
 
-function extract(data, key, criteria) {
-    // isolate feature of interest
-    let array;
-    if (key) {
-        if (criteria)
-            data = data.filter(criteria);
-        array = data.map(entry => +entry[key]); 
-    } else {
-        array = data;
-    }
 
-
-    return array;
-}
-
-function loadCSV(path) {
-   let data = [];
-
-   return new Promise((resolve, reject) => {
-       csv.fromPath(path, {headers: true})
-       .on("data", d => data.push(d))
-       .on("end", () => {
-           resolve(data);
-       })
-       .on("error", e => {
-           reject(e);
-       });
-   });
-}
-
-function pad(str, n) {
-    return (str + new Array(n).fill(" ").join("")).slice(0, n);
-}
-
-
-main();
+util.runAsyncFunction(main);

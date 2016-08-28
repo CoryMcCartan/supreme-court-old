@@ -1,0 +1,13 @@
+title: Supreme Court Predictions
+description: > 
+    Machine learning predictions for cases before the United States Supreme
+    Court.
+url: "https://corymccartan.github.io/supreme-court/" 
+baseurl: "/supreme-court"
+
+sass:
+    style: compressed
+exclude: 
+    - test
+    - Gemfile
+

@@ -22,6 +22,7 @@ let args = require("yargs")
     .argv;
 let fs = require("mz/fs");
 let csv = require("fast-csv");
+let util = require("./util.js");
 try {
     require("pdfjs-dist/build/pdf.combined"); // will throw an error about 'fake workers' b/c of node
 } catch(e) { console.log(e); }
@@ -32,116 +33,123 @@ try {
 const PET_RESP = {petitioner: "petitioner", respondent: "respondent"}, 
       APPEL = {petitioner: "appellant", respondent: "appellee"};
 
-function main() {
-    Promise.all([
-        loadOutcomes(), // get the actual results of past cases
-        loadFeatures(), // load the current aggregated list of text features and other data
-    ]).then(([outcomes, featureSummary]) => {
-        loadArguments(outcomes, featureSummary); // load and parse the argument PDFs
-    });
+function * main() {
+    let outcomes = yield util.loadCSV(args.outcomes_file); 
+    let featureSummary = yield util.loadCSV(args.feature_file); 
+    yield* loadArguments(outcomes, featureSummary); // load and parse the argument PDFs
 }
 
-function loadArguments(outcomes, featureSummary) {
-    fs.readFile(args.url_list, "utf-8").then(text => {
-        // process a subset of URLs, if specified
-        let startIndex = args.start;
-        let stopIndex = startIndex + args.length;
-        let urls = text.split("\n").slice(startIndex, stopIndex);
+function * loadArguments(outcomes, featureSummary) {
+    let text = yield * fs.readFile(args.url_list, "utf-8");
+    // process a subset of URLs, if specified
+    let startIndex = args.start;
+    let stopIndex = startIndex + args.length;
+    let urls = text.split("\n").slice(startIndex, stopIndex);
 
-        let count = 0; // keep track of how many PDFs we have parsed
-        for (let url of urls) {
-            let idx = startIndex++; // and which index we are on (so the user knows where to restart after stopping)
+    let count = 0; // keep track of how many PDFs we have parsed
+    for (let url of urls) {
+        let idx = startIndex++; // and which index we are on (so the user knows where to restart after stopping)
 
-            getArgumentText(url).then(pages => {
-                if (!pages.length) {
-                    console.log(`${++count}  ${idx}   Not loaded`);
-                    return;
-                }
-                let argument;
-                // PDFs are so inconsistent that it's much safer to wrap in try...catch
-                try {
-                    argument = parseTranscript(pages); // do basic parsing
-                    argument = extractFeatures(argument); // calculate text metrics
-                } catch (e) {
-                    console.log(e);
-                    console.log(`${++count}  ${idx}   Skipping case`);
-                    return;
-                }
-                if (!("caseNumber" in argument)) { // Something has gone horribly wrong
-                    console.log(`${++count}  ${idx}   Skipping case`);
-                    return;
-                }
-                
-                
-                // find the matching entry in our historical list of cases
-                let outcome = outcomes.find(o => o.docket === argument.caseNumber); 
-                if (!outcome) { // for some reason, the list is partially incomplete
-                    console.log(`${++count}  ${idx}   Outcome not found: ${argument.caseNumber}`);
-                    return;
-                }
-
-                argument.outcome = { // we really only care about who wins and by how much
-                    side: +outcome.partyWinning ? "petitioner" : "respondent",
-                    margin: +outcome.majVotes - +outcome.minVotes
-                };
-
-                if (argument.text.trim() === "") {// couldn't read text properly
-                    console.log(`${++count}  ${idx}   No argument text parsed: ${argument.caseNumber}.`);
-                    return;
-                }
-                delete argument.text
-
-                argument = condenseText(argument);
-
-                // helper variables
-                let pet = argument.side_summaries.find(s => s.side === "petitioner");
-                let resp = argument.side_summaries.find(s => s.side === "respondent");
-                let jus = argument.side_summaries.find(s => s.side === "justices");
-                // some problem in matching counsel names to their words,
-                // usually. (If the court reporter mispelled the name, for example)
-                if (pet.words_spoken === 0 || resp.words_spoken === 0) {
-                    console.log(`${++count}  ${idx}   Argument text not parsed correctly: ${argument.caseNumber}`);
-                    return;
-                }
-                // pick which data points we want to have in our aggregated list
-                featureSummary.unshift({
-                    caseNumber: argument.caseNumber,
-                    side: argument.outcome.side === "petitioner" ? 1 : 0,
-                    margin: argument.outcome.margin,
-                    p_interruptions: pet.interruptions/pet.words_spoken,
-                    p_words: pet.words_spoken/pet.times_spoken,
-                    p_times: pet.times_spoken/pet.words_spoken,
-                    p_laughter: pet.laughter/pet.words_spoken,
-                    p_num_counsel: argument.petitioner.counsel.length,
-                    p_num_int_by: pet.num_int_by,
-                    r_interruptions: resp.interruptions/pet.words_spoken,
-                    r_words: resp.words_spoken/pet.times_spoken,
-                    r_times: resp.times_spoken/pet.words_spoken,
-                    r_laughter: resp.laughter/pet.words_spoken,
-                    r_num_counsel: argument.respondent.counsel.length,
-                    r_num_int_by: resp.num_int_by,
-                    j_interruptions: jus.interruptions/pet.words_spoken,
-                    j_words: jus.words_spoken/pet.times_spoken,
-                    j_times: jus.times_spoken/pet.words_spoken,
-                    j_laughter: jus.laughter/pet.words_spoken,
-                    j_num: +outcome.majVotes + +outcome.minVotes,
-                    j_num_int_by: jus.num_int_by,
-                });
-
-                console.log(`${++count}  ${idx}   Parsed case No. ${argument.caseNumber} successfully.`);
-                fs.writeFile(`${args.argument_dir}/${argument.caseNumber}.json`, JSON.stringify(argument));
-
-                if (count === urls.length) {
-                    // remove duplicates
-                    featureSummary = featureSummary.filter((f, i, fs) => {
-                        return fs.findIndex(x => x.caseNumber === f.caseNumber) === i;
-                    });
-                    csv.writeToPath(args.feature_file, featureSummary, {headers: true});
-                    console.log("DONE.");
-                }
-            });
+        let pages = yield getArgumentText(url);
+        if (!pages.length) {
+            console.log(`${++count}  ${idx}   Not loaded`);
+            return;
         }
-    });
+        let argument;
+        // PDFs are so inconsistent that it's much safer to wrap in try...catch
+        try {
+            argument = parseTranscript(pages); // do basic parsing
+            argument = extractFeatures(argument); // calculate text metrics
+        } catch (e) {
+            console.log(e);
+            console.log(`${++count}  ${idx}   Skipping case`);
+            return;
+        }
+        if (!("caseNumber" in argument)) { // Something has gone horribly wrong
+            console.log(`${++count}  ${idx}   Skipping case`);
+            return;
+        }
+
+
+        // find the matching entry in our historical list of cases
+        let outcome = outcomes.find(o => o.docket === argument.caseNumber); 
+        if (!outcome) { // for some reason, the list is partially incomplete
+            console.log(`${++count}  ${idx}   Outcome not found: ${argument.caseNumber}`);
+            return;
+        }
+
+        argument.outcome = { // we really only care about who wins and by how much
+            side: +outcome.partyWinning ? "petitioner" : "respondent",
+            margin: +outcome.majVotes - +outcome.minVotes
+        };
+
+        if (argument.text.trim() === "") {// couldn't read text properly
+            console.log(`${++count}  ${idx}   No argument text parsed: ${argument.caseNumber}.`);
+            return;
+        }
+        delete argument.text
+
+        argument = condenseText(argument);
+
+        // helper variables
+        let pet = argument.side_summaries.find(s => s.side === "petitioner");
+        let resp = argument.side_summaries.find(s => s.side === "respondent");
+        // some problem in matching counsel names to their words,
+        // usually. (If the court reporter mispelled the name, for example)
+        if (pet.words_spoken === 0 || resp.words_spoken === 0) {
+            console.log(`${++count}  ${idx}   Argument text not parsed correctly: ${argument.caseNumber}`);
+            return;
+        }
+
+        let features = createFeatures(argument);
+        features.side = argument.outcome.side === "petitioner" ? 1 : 0;
+        features.margin = argument.outcome.margin;
+        features.j_num = +outcome.majVotes + +outcome.minVotes;
+        argument.num_jusitces = features.j_num;
+        featureSummary.unshift(features);
+
+        console.log(`${++count}  ${idx}   Parsed case No. ${argument.caseNumber} successfully.`);
+        fs.writeFile(`${args.argument_dir}/${argument.caseNumber}.json`, JSON.stringify(argument));
+
+        if (count === urls.length) {
+            // remove duplicates
+            featureSummary = featureSummary.filter((f, i, fs) => {
+                return fs.findIndex(x => x.caseNumber === f.caseNumber) === i;
+            });
+            util.writeCSV(args.feature_file, featureSummary);
+            console.log("DONE.");
+        }
+    }
+}
+
+function createFeatures(argument) {
+    // helper variables
+    let pet = argument.side_summaries.find(s => s.side === "petitioner");
+    let resp = argument.side_summaries.find(s => s.side === "respondent");
+    let jus = argument.side_summaries.find(s => s.side === "justices");
+
+    // pick which data points we want to have in our aggregated list
+    return {
+        caseNumber: argument.caseNumber,
+        p_minus_r: (pet.interruptions - resp.interruptions)/pet.words_spoken,
+        p_interruptions: pet.interruptions/pet.words_spoken,
+        p_words: pet.words_spoken/pet.times_spoken,
+        p_times: pet.times_spoken/pet.words_spoken,
+        p_laughter: pet.laughter/pet.words_spoken,
+        p_num_counsel: argument.petitioner.counsel.length,
+        p_num_int_by: pet.num_int_by,
+        r_interruptions: resp.interruptions/pet.words_spoken,
+        r_words: resp.words_spoken/pet.times_spoken,
+        r_times: resp.times_spoken/pet.words_spoken,
+        r_laughter: resp.laughter/pet.words_spoken,
+        r_num_counsel: argument.respondent.counsel.length,
+        r_num_int_by: resp.num_int_by,
+        j_interruptions: jus.interruptions/pet.words_spoken,
+        j_words: jus.words_spoken/pet.times_spoken,
+        j_times: jus.times_spoken/pet.words_spoken,
+        j_laughter: jus.laughter/pet.words_spoken,
+        j_num_int_by: jus.num_int_by,
+    };
 }
 
 function loadArgument(url) {
@@ -170,6 +178,8 @@ return new Promise((resolve, reject) => {
         argument = condenseText(argument);
 
         resolve(argument)
+    }).catch(e => {
+        resolve(e);
     });
 });
 }
@@ -387,7 +397,7 @@ function condenseText(argument) {
  * Fetch PDFs from the internet and extract raw text information
  */
 function getArgumentText(url) {
-return new Promise(resolve => {
+return new Promise((resolve, reject) => {
     try {
         PDFJS.getDocument(url)
         .then(pdf => {
@@ -399,9 +409,9 @@ return new Promise(resolve => {
             }
 
             Promise.all(promises).then(resolve);
-        });
+        }).catch(reject);
     } catch(e) {
-        resolve(""); 
+        reject(e);
     }
 });
 }
@@ -446,51 +456,16 @@ return new Promise(resolve => {
 });
 }
 
-/*
- * Get current list of features and information about cases from a CSV file.
- */
-function loadFeatures() {
-   let featureSummary = [];
-
-   return new Promise((resolve, reject) => {
-       csv.fromPath(args.feature_file, {headers: true})
-       .on("data", d => featureSummary.push(d))
-       .on("end", () => {
-           resolve(featureSummary);
-       })
-       .on("error", () => {
-           resolve([]);
-       });
-   });
-}
-
-/*
- * Load a list of past case outcomes from a CSV file.
- */
-function loadOutcomes() {
-    let data = [];
-
-    return new Promise((resolve, reject) => {
-        csv.fromPath(args.outcomes_file, {headers: true})
-        .on("data", d => data.push(d))
-        .on("end", () => {
-            resolve(data);
-        })
-        .on("error", reject);
-    });
-}
-
 
 if (require.main === module) { // called directly as a script
-    main(); 
+    runAsyncFunction(main); 
     (function wait () { // so that we don't exit before callback
         setTimeout(wait, 1000);
     })();
 }
 else
     module.exports = {
-        loadOutcomes,
-        loadFeatures,
+        createFeatures,
         loadArguments,
         loadArgument,
     };
