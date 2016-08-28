@@ -40,7 +40,7 @@ function * main() {
 }
 
 function * loadArguments(outcomes, featureSummary) {
-    let text = yield * fs.readFile(args.url_list, "utf-8");
+    let text = yield fs.readFile(args.url_list, "utf-8");
     // process a subset of URLs, if specified
     let startIndex = args.start;
     let stopIndex = startIndex + args.length;
@@ -53,7 +53,7 @@ function * loadArguments(outcomes, featureSummary) {
         let pages = yield getArgumentText(url);
         if (!pages.length) {
             console.log(`${++count}  ${idx}   Not loaded`);
-            return;
+            continue;
         }
         let argument;
         // PDFs are so inconsistent that it's much safer to wrap in try...catch
@@ -63,11 +63,11 @@ function * loadArguments(outcomes, featureSummary) {
         } catch (e) {
             console.log(e);
             console.log(`${++count}  ${idx}   Skipping case`);
-            return;
+            continue;
         }
         if (!("caseNumber" in argument)) { // Something has gone horribly wrong
             console.log(`${++count}  ${idx}   Skipping case`);
-            return;
+            continue;
         }
 
 
@@ -75,7 +75,7 @@ function * loadArguments(outcomes, featureSummary) {
         let outcome = outcomes.find(o => o.docket === argument.caseNumber); 
         if (!outcome) { // for some reason, the list is partially incomplete
             console.log(`${++count}  ${idx}   Outcome not found: ${argument.caseNumber}`);
-            return;
+            continue;
         }
 
         argument.outcome = { // we really only care about who wins and by how much
@@ -85,7 +85,7 @@ function * loadArguments(outcomes, featureSummary) {
 
         if (argument.text.trim() === "") {// couldn't read text properly
             console.log(`${++count}  ${idx}   No argument text parsed: ${argument.caseNumber}.`);
-            return;
+            continue;
         }
         delete argument.text
 
@@ -98,7 +98,7 @@ function * loadArguments(outcomes, featureSummary) {
         // usually. (If the court reporter mispelled the name, for example)
         if (pet.words_spoken === 0 || resp.words_spoken === 0) {
             console.log(`${++count}  ${idx}   Argument text not parsed correctly: ${argument.caseNumber}`);
-            return;
+            continue;
         }
 
         let features = createFeatures(argument);
@@ -110,16 +110,14 @@ function * loadArguments(outcomes, featureSummary) {
 
         console.log(`${++count}  ${idx}   Parsed case No. ${argument.caseNumber} successfully.`);
         fs.writeFile(`${args.argument_dir}/${argument.caseNumber}.json`, JSON.stringify(argument));
-
-        if (count === urls.length) {
-            // remove duplicates
-            featureSummary = featureSummary.filter((f, i, fs) => {
-                return fs.findIndex(x => x.caseNumber === f.caseNumber) === i;
-            });
-            util.writeCSV(args.feature_file, featureSummary);
-            console.log("DONE.");
-        }
     }
+    
+    // remove duplicates
+    featureSummary = featureSummary.filter((f, i, fs) => {
+        return fs.findIndex(x => x.caseNumber === f.caseNumber) === i;
+    });
+    util.writeCSV(args.feature_file, featureSummary);
+    console.log("DONE.");
 }
 
 function createFeatures(argument) {
@@ -205,8 +203,8 @@ function parseTranscript(pages) {
     let infoPage = pages.slice(0, tocPage).join("");
 
     let box = infoPage 
-        .split(/\s+-?(?: -)+ ?x\s+/g)[1] // get box on page
-        .split(/\s+:\s+/); // split by line, approximately
+    .split(/\s+-?(?: -)+ ?x\s+/gi)[1] // get box on page
+    .split(/\s+:\s+/); // split by line, approximately
     let inx_p = box.findIndex(t => t.toLowerCase().includes(mode.petitioner)); // find where petitioner is mentioned
     let inx_r = box.findIndex(t => t.toLowerCase().includes(mode.respondent)); //  ''   ''   responent  ''  ''
     if (inx_p < 0 && inx_r < 0) { // if not found, try using appellant/appellee
@@ -215,11 +213,17 @@ function parseTranscript(pages) {
         inx_r = box.findIndex(t => t.toLowerCase().includes(mode.respondent));
     }
     // last-ditch
-    if (inx_p < 0) inx_p = box.findIndex(t => t.toLowerCase().includes("No. ")); // assume petitioner named first
+    if (inx_p < 0) inx_p = box.findIndex(t => t.includes("No. ")) - 1; // assume petitioner named first
     if (inx_r < 0) inx_r = box.length; // and respondent named last
     // extract names & remove trailing comma
+    inx_no = box.findIndex(t => t.includes("No. "));
+    inx_vs = box.findIndex(t => t.toLowerCase().includes("v."));
     argument.petitioner.name = box.slice(0, inx_p).join(" ").trim().slice(0, -1); 
-    argument.respondent.name = box.slice(inx_p + 2, inx_r).join(" ").trim().slice(0, -1);
+    if (inx_no > inx_vs) {
+        argument.respondent.name = box.slice(inx_no, inx_r).join(" ").split("\n").slice(1).join(" ").trim().slice(0, -1);
+    } else {
+        argument.respondent.name = box.slice(inx_no + 1, inx_r).join(" ").trim().slice(0, -1);
+    }
 
     // extract case number
     matches = box.join("").match(/No\.\s+(\d\d-\d+)/);
@@ -284,52 +288,52 @@ function parseTranscript(pages) {
     let text = pages.slice(argumentsPage, lastPage + 1).join("");
     text = text.split("P R O C E E D I N G S")[1];
     text = text.split(/\(Whereupon,? at \d/i)[0];
-    // refine text
-    argument.text = text;
-    // break text into list of speakers
-    //                                    name, then :             make newlines spaces and get rid of timestamp
-    let raw_speakers = text.split(/\n([\.A-Z]+ [ A-Za-z\-']+):\s+/).map(t => t.replace(/\n/g, " ").trim()).slice(1);
-    let speakers = new Array(raw_speakers.length / 2);
-    // parse speaker list. the regex split means that names of people alternate with what they say
-    let last = -1
-    speakers = raw_speakers.reduce((p, c, i) => {
-        if (i % 2 === 0) { // even numbers: speaker name
-            p[i/2] = {
-                name: c,
-            };
-            let name = c.split(" "); // split name up into pieces
-            let lastName = name.slice(-1)[0];
-            let index = people.findIndex(p => c.includes(p.lastName)) // find matching person entry
-            if (index < 0) // new person
-                index = people.push({
-                    id: ++id_ctr,
-                    fullName: c, // remove trailing comma
-                    lastName,
-                    counsel: false,
-                    justice: c.includes("JUSTICE"),
-                    side: c.includes("JUSTICE") ? "justices" : "",
-                }) - 1; 
+                      // refine text
+                      argument.text = text;
+                      // break text into list of speakers
+                      //                                    name, then :             make newlines spaces and get rid of timestamp
+                      let raw_speakers = text.split(/\n([\.A-Z]+ [ A-Za-z\-']+):\s+/).map(t => t.replace(/\n/g, " ").trim()).slice(1);
+                      let speakers = new Array(raw_speakers.length / 2);
+                      // parse speaker list. the regex split means that names of people alternate with what they say
+                      let last = -1
+                      speakers = raw_speakers.reduce((p, c, i) => {
+                          if (i % 2 === 0) { // even numbers: speaker name
+                              p[i/2] = {
+                                  name: c,
+                              };
+                              let name = c.split(" "); // split name up into pieces
+                              let lastName = name.slice(-1)[0];
+                              let index = people.findIndex(p => c.includes(p.lastName)) // find matching person entry
+                              if (index < 0) // new person
+                                  index = people.push({
+                                      id: ++id_ctr,
+                                      fullName: c, // remove trailing comma
+                                      lastName,
+                                      counsel: false,
+                                      justice: c.includes("JUSTICE"),
+                                      side: c.includes("JUSTICE") ? "justices" : "",
+                                  }) - 1; 
 
-            p[i/2].id = index;
-            p[i/2].spokeBefore = last;
-            if (last >= 0)
-                p[i/2].sideBefore = people[last].side;
-            else 
-                p[i/2].sideBefore = "none";
-            last = p[i/2].id;
-        } else { // odd numbers: text
-            // sometimes text inclues heading information about oral arguments
-            p[(i-1)/2].text = c.split(/ORAL ARGUMENT OF|REBUTTAL ARGUMENT OF/)[0]; 
-        }
+                                  p[i/2].id = index;
+                                  p[i/2].spokeBefore = last;
+                                  if (last >= 0)
+                                      p[i/2].sideBefore = people[last].side;
+                                  else 
+                                      p[i/2].sideBefore = "none";
+                                  last = p[i/2].id;
+                          } else { // odd numbers: text
+                              // sometimes text inclues heading information about oral arguments
+                              p[(i-1)/2].text = c.split(/ORAL ARGUMENT OF|REBUTTAL ARGUMENT OF/)[0]; 
+                          }
 
-        return p;
-    }, speakers);
-    argument.speakers = speakers;
+                          return p;
+                      }, speakers);
+                      argument.speakers = speakers;
 
-    argument.people = people;
+                      argument.people = people;
 
 
-    return argument;
+                      return argument;
 }
 
 function extractFeatures(argument) { 
@@ -458,7 +462,7 @@ return new Promise(resolve => {
 
 
 if (require.main === module) { // called directly as a script
-    runAsyncFunction(main); 
+    util.runAsyncFunction(main); 
     (function wait () { // so that we don't exit before callback
         setTimeout(wait, 1000);
     })();

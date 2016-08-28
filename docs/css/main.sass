@@ -1,0 +1,77 @@
+---
+---
+
+$img-size: 100vh
+$glass-size: 25vh
+
+$desktop: "(min-width: 680px)"
+$mobile: "(max-width: 680px)"
+
+*
+    box-sizing: border-box
+
+body 
+    font-family: "Roboto", sans-serif
+    background-color: #e2e2e0
+    margin: 0
+
+main
+    margin: 0.5em auto
+    width: 80vw
+
+h1, h2, h3, h4, h5, h6
+    font-family: "Old Standard TT", serif
+
+h1.title
+    color: white
+    position: relative
+    margin: 0
+    padding: 0.5em
+    font-size: 7.2vh
+    line-height: calc(25vh - 1em)
+    text-align: center
+    height: $glass-size
+//    margin-top: -$img-size
+
+.bg-image
+    position: absolute
+    top: 0
+    height: $img-size
+    width: 100vw
+    background-position: center
+    background-image: url("{{site.baseurl}}/assets/court.jpg")
+    background-size: cover
+    background-color: #5089c7
+    z-index: -2
+
+.glass 
+    background-color: rgba(0, 0, 0, 0.4)
+    width: 100vw
+    height: $glass-size
+    margin-top: $img-size - $glass-size
+    overflow: hidden
+    transform: translateY(100%) translateY(-$glass-size)
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5)
+
+// .glass::before 
+//     display: block
+//     width: 100%
+//     height: $img-size
+//     background-image: url("{{site.baseurl}}/assets/court.jpg")
+//     background-position: center bottom
+//     background-size: cover
+//     content: ""
+//     transform: translateY(-100%) translateY($glass-size)
+//     opacity: 0.6
+//     -webkit-filter: blur(4px)
+//     z-index: -1
+
+@media #{$mobile} 
+    main
+        margin: 0.5em
+        padding: 0 0.5em
+        width: 100vw
+
+    h1.title
+        font-size: 6.5vh
+        line-height: 1.1
