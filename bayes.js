@@ -77,11 +77,14 @@ function predict_boolean(entry, prior, thresholds) {
     let prob = prior;
 
     for (let variable of thresholds) {
-        if (+entry[variable.key] <= +variable.threshold)
-            prob *= (1 - +variable.likelihood) / (1 - +variable.evidence);
+        if (entry[variable.key] <= variable.threshold)
+            prob *= (1 - variable.likelihood) / (1 - variable.evidence);
         else
-            prob *= +variable.likelihood / +variable.evidence;
+            prob *= variable.likelihood / variable.evidence;
     }
+
+    if (prob > 1) prob = 1;
+    if (prob < 0) prob = 0;
 
     return prob;
 }
@@ -91,9 +94,9 @@ function predict(entry, prior, thresholds) {
     let prob_resp = 1 - prior;
 
     for (let variable of thresholds) {
-        let value = +entry[variable.key];
-        prob_pet *= norm(value, +variable.mean_pet, +variable.var_pet);
-        prob_resp *= norm(value, +variable.mean_resp, +variable.var_resp);
+        let value = entry[variable.key];
+        prob_pet *= norm(value, variable.mean_pet, variable.var_pet);
+        prob_resp *= norm(value, variable.mean_resp, variable.var_resp);
     }
 
     return prob_pet / (prob_pet + prob_resp); // normalize

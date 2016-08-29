@@ -19,13 +19,21 @@
 <body>
     <div class="bg-image"></div>
     
-    <nav>
+    <nav class="desktop">
         <span class="logo">SCP</span>
         <span class="spacer"></span>
         <a href="#recent">Recent Cases</a>
         <a href="#predict">Predict a Case</a>
         <a href="#about">About</a>
     </nav>
+    <nav class="mobile">
+        <span class="logo">SCP</span>
+        <span class="spacer"></span>
+        <a href="#recent">Recent</a>
+        <a href="#predict">Predict</a>
+        <a href="#about">About</a>
+    </nav>
+
 
     <div class="glass down">
         <h1 class="title">{{ site.title }}</h1>
@@ -33,11 +41,55 @@
     </div>
 
     <main>
-        <h2 id="recent">Recent Cases</h2>
+        <section id="recent">
+            <h1>Recent Cases</h1>
 
-        <h2 id="predict">Predict a Case</h2>
+            <p>
+                For each case, the petitioning party is listed first, and the
+                predicted winner is highlighted in blue.  Click on a case to 
+                see more information.
+            </p>
 
-        <h2 id="about">About</h2>
+            <ul class="case-list">
+                <li>
+                    <h2>dkt. 15-674</h2>
+                    <div class="party">UNITED STATES</div>
+                    <div class="vs">v.</div>
+                    <div class="winning party">TEXAS et al.</div>
+                </li>
+                <li>
+                    <h2>dkt. 15-674</h2>
+                    <div class="party">UNITED STATES</div>
+                    <div class="vs">v.</div>
+                    <div class="winning party">TEXAS et al.</div>
+                </li>
+                <li>
+                    <h2>dkt. 14-556</h2>
+                    <div class="winning party">JAMES OBERFEGELL et al.</div>
+                    <div class="vs">v.</div>
+                    <div class="party">HODGES</div>
+                </li>
+                <li>
+                    <h2>dkt. 14-1418</h2>
+                    <div class="party">ZUBIK</div>
+                    <div class="vs">v.</div>
+                    <div class="winning party">BURWELL</div>
+                </li>
+            </ul>
+        </section>
+
+        <h1 id="predict">Predict a Case</h1>
+
+        <p>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+            veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+            commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
+            velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
+            occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+        </p>
+
+        <h1 id="about">About</h1>
 
         <p>
             Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod

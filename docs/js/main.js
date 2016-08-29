@@ -1,9 +1,21 @@
 function main() {
+    setupScrolling();
+}
+
+function setupScrolling() {
+    let links = $$("nav a");
+    for (let link of links) {
+        link.addEventListener("click", function() {
+            let el_y = $(link.hash).getBoundingClientRect().top;
+            smoothScroll(el_y);
+        });
+    }
+
     let button = $("button.nav")
     button.style.color = "rgba(255, 255, 255, 0.5)";
     setTimeout(() => button.style.transition = "color 250ms", 1200);
     button.addEventListener("click", function(e) {
-        smoothScroll(innerHeight); // scroll whole page 
+        smoothScroll(innerHeight + 10); // scroll whole page 
         button.style.color = "transparent";
         setTimeout(() => button.remove(), 250);
     });
@@ -36,6 +48,7 @@ function smoothScroll(target) {
 }
 
 window.$ = s => document.querySelector(s);
+window.$$ = s => document.querySelectorAll(s);
 document.addEventListener("readystatechange", function(e) {
     if (document.readyState === "complete")
         main();
