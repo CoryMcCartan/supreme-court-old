@@ -5,7 +5,8 @@ $img-size: 100vh
 $glass-size: 25vh
 
 $desktop: "(min-width: 680px)"
-$mobile: "(max-width: 680px)"
+$mobile: "(min-width: 380px) and (max-width: 680px)"
+$verysmall: "(max-width: 380px)"
 
 *
     box-sizing: border-box
@@ -15,12 +16,60 @@ body
     background-color: #e2e2e0
     margin: 0
 
+nav
+    padding: 1rem
+    background-color: rgba(0, 0, 0, 0.2)
+    position: absolute
+    top: 0
+    display: flex
+    width: 100vw
+
+    a
+        color: #eee
+        font-size: 1.1rem
+        text-decoration: none
+        padding: 0.4rem 2rem
+        transition: color 250ms
+
+    a:hover
+        color: #fff
+        cursor: pointer
+
+span.logo
+    color: #000
+    font-weight: bold
+    font-family: "Old Standard TT", serif
+    font-size: 1.2rem
+
+span.spacer
+    flex-grow: 1
+
 main
-    margin: 0.5em auto
+    margin: 0.5em auto 2em auto
     width: 80vw
+
+footer
+    padding: 1.5rem
+    background-color: #444
+    color: #aaa
+    font-size: 0.9rem
+    text-align: center
+
+    a
+        color: #aaa
+        
 
 h1, h2, h3, h4, h5, h6
     font-family: "Old Standard TT", serif
+    margin: 0.75em 0 0.5em
+
+p
+    text-align: justify
+    text-indent: 2em
+    margin: 0
+
+p:first-of-type
+    text-indent: 0
 
 h1.title
     color: white
@@ -45,33 +94,59 @@ h1.title
     z-index: -2
 
 .glass 
-    background-color: rgba(0, 0, 0, 0.4)
+    background: linear-gradient(rgba(0, 0, 0, 0.0), rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7))
     width: 100vw
     height: $glass-size
     margin-top: $img-size - $glass-size
     overflow: hidden
     transform: translateY(100%) translateY(-$glass-size)
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5)
+    box-shadow: 0 10px 10px -10px rgba(0, 0, 0, 0.5)
 
-// .glass::before 
-//     display: block
-//     width: 100%
-//     height: $img-size
-//     background-image: url("{{site.baseurl}}/assets/court.jpg")
-//     background-position: center bottom
-//     background-size: cover
-//     content: ""
-//     transform: translateY(-100%) translateY($glass-size)
-//     opacity: 0.6
-//     -webkit-filter: blur(4px)
-//     z-index: -1
+button.nav
+    position: absolute
+    right: calc(50% - 2rem)
+    bottom: 0.5rem
+    height: 4rem
+    font-size: 2.5rem
+    background-color: transparent
+    border: none
+    color: transparent
+    border-radius: 10em
+    width: 4rem
+    font-family: Arial
+    padding-left: 0.5rem
+    outline: none
+    transform: scaleX(1.5)
+    transition: color 1200ms
+
+button.nav:hover
+    cursor: pointer
+    color: #fff
+
 
 @media #{$mobile} 
     main
-        margin: 0.5em
-        padding: 0 0.5em
+        margin: 0
+        padding: 0.5em 1em 2em 1em
         width: 100vw
 
     h1.title
-        font-size: 6.5vh
+        font-size: 6.2vh
         line-height: 1.1
+
+    nav a 
+        padding: 0.4rem 1rem
+
+@media #{$verysmall} 
+    main
+        margin: 0
+        padding: 0.4em 0.8em 2em 0.8em
+        width: 100vw
+
+    h1.title
+        font-size: 5.6vh
+        line-height: 1.1
+
+    nav a 
+        font-size: 1.0rem
+        padding: 0.4rem 0.8rem
