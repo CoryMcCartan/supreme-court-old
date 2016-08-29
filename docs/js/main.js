@@ -4,6 +4,8 @@ function main() {
     setTimeout(() => button.style.transition = "color 250ms", 1200);
     button.addEventListener("click", function(e) {
         smoothScroll(innerHeight); // scroll whole page 
+        button.style.color = "transparent";
+        setTimeout(() => button.remove(), 250);
     });
 }
 
