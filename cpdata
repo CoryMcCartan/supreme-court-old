@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+cp data/predictions.csv docs/data/
+cp data/features.csv docs/data/
+
+echo Data copied.

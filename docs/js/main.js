@@ -1,5 +1,86 @@
 function main() {
+    loadCases();
     setupScrolling();
+}
+
+function loadCases() {
+    const recentCases = innerWidth > 800 ? 8 : innerWidth > 460 ? 6 : 4;
+
+    Promise.all([
+        fetch("data/predictions.csv").then(r => r.text()),
+        fetch("data/features.csv").then(r => r.text()),
+    ])
+    .then(([p_text, f_text]) => {
+        let predictions = d3.csvParse(p_text, row => {
+            let obj = {
+                caseNumber: row.caseNumber,
+                date: new Date(row.date),
+                petitioner: row.petitioner,
+                respondent: row.respondent,
+                prob: +row.prob,
+                correct: +row.correct,
+            };
+
+            if (isNaN(obj.date))
+                obj.date = new Date("1/1/2000");
+
+            obj.petitioner = obj.petitioner.replace(", ET AL.", " et al. ");
+            obj.respondent = obj.respondent.replace(", ET AL.", " et al. ");
+            obj.petitioner = obj.petitioner.split(",")[0];
+            obj.respondent = obj.respondent.split(",")[0];
+            if (obj.respondent.endsWith("."))
+                obj.respondent = obj.respondent.slice(0, -1);
+
+
+            return obj;
+        });
+        let features = d3.csvParse(f_text);
+
+        window.predict = predict.bind(window, predictions, features);
+
+        // newest to oldest
+        predictions.sort((a, b) => b.date - a.date); 
+
+        let recent = predictions.slice(0, recentCases);
+        initRecent(recent);
+    });
+}
+
+function predict(predictions, features, caseNumber) {
+    let case_features = features.find(f => f.caseNumber === caseNumber);
+    let prediction = predictions.find(p => p.caseNumber === caseNumber);
+}
+
+function initRecent(recent) {
+    let list = d3.select("ul.case-list")
+        .selectAll("li")
+        .data(recent)
+        .enter()
+        .append("li");
+
+    list.on("click", d => predict(d.caseNumber));
+
+    list
+        .append("h2")
+        .text(d => "dkt. " + d.caseNumber);
+    list
+        .append("div")
+        .classed("winning", d => Math.round(d.prob))
+        .classed("right", d => d.correct === 1)
+        .classed("wrong", d => d.correct === 0)
+        .classed("party", true)
+        .text(d => d.petitioner);
+    list
+        .append("div")
+        .attr("class", "vs")
+        .text("v.");
+    list
+        .append("div")
+        .classed("winning", d => Math.round(1 - d.prob))
+        .classed("right", d => d.correct === 1)
+        .classed("wrong", d => d.correct === 0)
+        .classed("party", true)
+        .text(d => d.respondent);
 }
 
 function setupScrolling() {
@@ -49,6 +130,15 @@ function smoothScroll(target) {
 
 window.$ = s => document.querySelector(s);
 window.$$ = s => document.querySelectorAll(s);
+
+if (navigator.serviceWorker) {
+    navigator.serviceWorker.register("service-worker.js", {
+        scope: location.pathname.replace("index.html", "")
+    }).then(() => {
+        console.log("Service Worker Registered.");
+    })
+}
+
 document.addEventListener("readystatechange", function(e) {
     if (document.readyState === "complete")
         main();

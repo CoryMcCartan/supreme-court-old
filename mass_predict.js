@@ -42,6 +42,12 @@ function * main() {
         x.j_num = argument.num_justices || 9;
 
         let prob = bayes.predict_boolean(x, prior, thresholds);
+        let prediction = Math.round(prob);
+        // close 8-justice cases => split court means affirm
+        if (Math.abs(0.5 - prob) < 0.05 && x.j_num === 8 && prediction === 1) {
+            prediction = 0;
+            console.log("Flipped.");
+        }
 
         argument.prediction = {
             petitioner: prob,
@@ -52,10 +58,11 @@ function * main() {
         let side = argument.outcome ? argument.outcome.side === "petitioner" : -1;
         predictions.unshift({
             caseNumber: argument.caseNumber,
+            date: argument.date,
             petitioner: argument.petitioner.name.replace(/\n/g, " ").trim(),
             respondent: argument.respondent.name.replace(/\n/g, " ").trim(),
             prob,
-            correct: side !== -1 ? +side === Math.round(prob) : undefined,
+            correct: side !== -1 ? 1 - Math.abs(+side - prediction) : -1,
         });
 
         fs.writeFile(filename, JSON.stringify(argument));

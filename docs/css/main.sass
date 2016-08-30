@@ -5,7 +5,7 @@ $img-size: 100vh
 $glass-size: 25vh
 
 $desktop: "(min-width: 680px)"
-$mobile: "(min-width: 380px) and (max-width: 680px)"
+$mobile: "(max-width: 680px)"
 $verysmall: "(max-width: 380px)"
 
 $blue: #5089c7
@@ -73,6 +73,7 @@ h1, h2, h3, h4, h5, h6
 p
     text-align: justify
     text-indent: 2em
+    line-height: 1.25
     margin: 0
 
 p:first-of-type
@@ -115,6 +116,10 @@ ul.case-list
     .winning
         background-color: $blue
         color: white
+    .winning.right
+        background-color: #3c4
+    .winning.wrong
+        background-color: #e44
 
     .vs
         margin: 0.3em 2em 0.3em 2em
@@ -178,6 +183,7 @@ button.nav:hover
 
 
 @media #{$mobile} 
+
     main
         margin: 0
         padding: 0.5em 1em 2em 1em

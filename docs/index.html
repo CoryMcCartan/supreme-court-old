@@ -6,7 +6,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="content-type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, height=device-height, minimum-scale=1, initial-scale=1.0">
     <meta name="description" content="{{ site.description }}">
 
     <link rel="icon" type="image/gif" href="assets/flag.gif">
@@ -46,36 +46,13 @@
 
             <p>
                 For each case, the petitioning party is listed first, and the
-                predicted winner is highlighted.  Click on a case to 
-                see more information.
+                predicted winner is highlighted in blue.  If the Court has
+                released its opinion for a case, the prediction is colored
+                either green or red to reflect whether it was correct or not.
+                Click on a case to see more information.
             </p>
 
-            <ul class="case-list">
-                <li>
-                    <h2>dkt. 15-674</h2>
-                    <div class="party">UNITED STATES</div>
-                    <div class="vs">v.</div>
-                    <div class="winning party">TEXAS et al.</div>
-                </li>
-                <li>
-                    <h2>dkt. 15-674</h2>
-                    <div class="party">UNITED STATES</div>
-                    <div class="vs">v.</div>
-                    <div class="winning party">TEXAS et al.</div>
-                </li>
-                <li>
-                    <h2>dkt. 14-556</h2>
-                    <div class="winning party">JAMES OBERFEGELL et al.</div>
-                    <div class="vs">v.</div>
-                    <div class="party">HODGES</div>
-                </li>
-                <li>
-                    <h2>dkt. 14-1418</h2>
-                    <div class="party">ZUBIK</div>
-                    <div class="vs">v.</div>
-                    <div class="winning party">BURWELL</div>
-                </li>
-            </ul>
+            <ul class="case-list"></ul>
         </section>
 
         <h1 id="predict">Predict a Case</h1>
@@ -92,62 +69,54 @@
         <h1 id="about">About</h1>
 
         <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-            veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-            commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-            velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
-            occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+            These Supreme Court Predictions are made using machine learning
+            software that has examined hundreds of past cases and learned what
+            to look for to make a successful prediction.
         </p>
         <p>
-            mollit anim id est laborum.  Lorem ipsum dolor sit amet, consectetur
-            adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-            magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-            ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
-            irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-            fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-            sunt in culpa qui officia deserunt mollit anim id est laborum.  Lorem
-            ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+            It takes several steps to arrive at a prediction for a case. First,
+            the software goes to the Supreme Court&rsquo;s website and downloads
+            a transcript of the oral arguments. It then parses the transcript 
+            file to extract key information, like the case number, date the case
+            was argued, and the names of the parties to the case.  The software
+            also goes through the text of the transcript itself and collects 
+            information, such as how many times each lawyer was interrupted, or
+            how many words the justices spoke.
         </p>
         <p>
-            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-            veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-            commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-            velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
-            occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-            mollit anim id est laborum.  Lorem ipsum dolor sit amet, consectetur
-            adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-            magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-            ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
+            Then the algorithm evaluates the case on a number of criteria: was
+            the lawyer for the petitioners interrupted more than once every 71
+            words? Was there more than one lawyer for the respondents? Were
+            there eight justices or nine? The algorithm has learned the  exact
+            values to check for each of these criteria by looking at past
+            cases.  It also knows how each criteria affects the overall chances
+            of success for the petitioner.  For example, the petitioner has won
+            only 1.7% of cases where their lawyer was interrupted more than
+            once every 71 words on average. The algorithm then combines all of
+            this information into a final estimate of the chances for each side
+            of winning the case.
         </p>
         <p>
-            irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-            fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-            sunt in culpa qui officia deserunt mollit anim id est laborum.  Lorem
-            ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+            The technical name for this kind of prediction algorithm is a 
+            <a href="https://en.wikipedia.org/wiki/Naive_Bayes_classifier">Naive Bayes Classifier</a>.
+            Because of some of the assumptions that are made by the model, the
+            probabilities that it estimates for each side are very rough and
+            imprecise.  Other than giving some sense of the confidence of the
+            algorithm, there's not much difference between a 56% chance and a
+            92% one. 
         </p>
         <p>
-            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-            veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-            commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-        </p>
-        <p>
-            velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
-            occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-            mollit anim id est laborum.  Lorem ipsum dolor sit amet, consectetur
-            adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-            magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation
-            ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
-            irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-            fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-            sunt in culpa qui officia deserunt mollit anim id est laborum.
+            The model trains itself by looking at some past cases, while it
+            leaves others for later so it can try to predict them without
+            having seen them before.  That way, it&rsquo;s possible to get a
+            clear sense of the model&rsquo;s accuracy.  Predicting over 750
+            cases, the model was correct 75% of the time.
         </p>
     </main>
 
     <footer>
         &copy; 2016 Cory McCartan.  All Rights Reserved.
-        <a href="https://www.github.com/CoryMcCartan/supreme-court/" target="_blank">
-            View Code</a>.
+        <a href="https://www.github.com/CoryMcCartan/supreme-court/" target="_blank">View Code</a>.
     </footer>
 
     <script src="https://d3js.org/d3.v4.min.js"></script>

@@ -35,6 +35,7 @@ function * main() {
 
     for (let [train_data, test_data] of util.crossValidate(data, args.k)) {
         thresholds = findThresholds(train_data, thresholds.slice(1));
+        //thresholds = findThresholds(train_data);
 
         let [
             t_accuracy,
@@ -43,6 +44,7 @@ function * main() {
             t_positive_rate
         ] = bayes.evaluate(thresholds[0].likelihood, thresholds.slice(1), test_data);
 
+        console.log(`TEST ${Math.round(100 * t_accuracy)}%`);
         accuracy += t_accuracy / args.k;
         precision += t_precision / args.k;
         recall += t_recall / args.k;
@@ -63,6 +65,7 @@ function * main() {
 function findThresholds(data, _thresholds = []) {
     let x_keys = [
         "p_minus_r",
+        "counsel_difference",
         "p_interruptions",
         "p_words",
         "p_times",
@@ -83,6 +86,10 @@ function findThresholds(data, _thresholds = []) {
         "j_num_int_by",
     ];
 
+    let force_thresholds = {
+        "j_num": 8.5,
+    };
+
     let thresholds = [];
     let prior = util.mean(data, "side");
     if (_thresholds.length) {
@@ -97,7 +104,7 @@ function findThresholds(data, _thresholds = []) {
                 var_pet,
                 mean_resp,
                 var_resp,
-            ] = baselineThreshold(data, key);
+            ] = baselineThreshold(data, key, force_thresholds[key]);
 
             thresholds.push({
                 key,
@@ -115,12 +122,16 @@ function findThresholds(data, _thresholds = []) {
     console.log(`PRIOR ACCURACY ${Math.round(100 * bayes.evaluate(prior, thresholds, data)[0])}%`);
 
     for (let variable of thresholds) {
+        if (variable.key in force_thresholds)
+            continue;
         variable = optimizeThreshold(data, variable, thresholds, prior);
     }
 
     let n = thresholds.length;
     let func = thresh => {
         for (let i = 0; i < n; i++) {
+            if (thresholds[i].key in force_thresholds)
+                continue;
             thresholds[i].threshold = thresh[i]; 
         }
 
@@ -132,6 +143,8 @@ function findThresholds(data, _thresholds = []) {
     let results = optimizer.NM(func, thresholds.map(t => t.threshold), 
                                bounds, args.optimize_steps);
     for (let i = 0; i < n; i++) {
+        if (thresholds[i].key in force_thresholds)
+            continue;
         thresholds[i].threshold = results.x[i]; 
     }
     console.log(`ACCURACY ${Math.round(100 * bayes.evaluate(prior, thresholds, data)[0])}%`);
@@ -150,9 +163,11 @@ function findThresholds(data, _thresholds = []) {
     return thresholds;
 }
 
-function baselineThreshold(data, key) {
+function baselineThreshold(data, key, override) {
     let wins_only = data.filter(x => x.side === PETITIONER);
-    let threshold = util.mean(data, key);
+    let threshold =  util.mean(data, key);
+    if (override !== undefined)
+        threshold = override;
 
     let likelihood = util.mean(wins_only.map(x => x[key] > threshold ? 1 : 0));
     let evidence = util.mean(data.map(x => x[key] > threshold ? 1 : 0));

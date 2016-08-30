@@ -406,9 +406,10 @@ return new Promise((resolve, reject) => {
         PDFJS.getDocument(url)
         .then(pdf => {
             let promises = [];
+            let caseyr = +url.split("argument_transcripts/")[1].slice(0, 2);
             for (let pg = 1; pg <= pdf.numPages; pg++) {
                 promises.push(
-                    pdf.getPage(pg).then(processPage.bind(this, pg))
+                    pdf.getPage(pg).then(processPage.bind(this, caseyr))
                 );
             }
 
@@ -443,16 +444,20 @@ return new Promise(resolve => {
                     
         // remove line and pagenumbers
         text_array = text_array.map(item => {
-            if (+item === parseInt(item) && !isNaN(+item))
+            let split = item.split("   ");
+            let years = [2000 + num, 2001 + num, 2002 + num, 2003 + num];
+            if (+item === parseInt(item) && !isNaN(+item) 
+                && !years.includes(+item))
                 return "\n"; // replace numbers with new lines
-            else if (+item.split("   ")[0])
+            else if (+split[0] && !years.includes(+split[0]))
                 return item.split("   ")[1] || ""; // line number embedeed at beginning
             else
                 return item;
         });
 
         let join_char = " ";
-        let avg_txt_item_length = text_array.reduce((p, c) => p + c.length, 0) / text_array.length; if (avg_txt_item_length > 15) // by sentence instead of by word
+        let avg_txt_item_length = text_array.reduce((p, c) => p + c.length, 0) / text_array.length; 
+        if (avg_txt_item_length > 10) // by sentence instead of by word
             join_char = "\n";
 
         resolve(text_array.join(join_char).replace(/\s*(\n)+\s*/g, "\n")); // remove extra spaces around newlines

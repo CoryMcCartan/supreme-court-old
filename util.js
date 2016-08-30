@@ -100,6 +100,7 @@ function prepData(data) {
         entry.votes = entry.side === PETITIONER ? 
             entry.margin : entry.j_num - entry.margin;
         entry.p_minus_r = +entry.p_interruptions - +entry.r_interruptions;
+        entry.counsel_difference = +entry.p_num_counsel - +entry.r_num_counsel;
     }
 }
 
