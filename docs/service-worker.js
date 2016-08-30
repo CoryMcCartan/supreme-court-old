@@ -19,6 +19,7 @@ var DYNAMIC_CACHE = [
     base + "css/main.css",
     base + "js/main.js",
     base + "data/predictions.csv",
+    base + "data/features.csv",
 ];
 var CACHE = STATIC_CACHE.concat(DYNAMIC_CACHE);
 

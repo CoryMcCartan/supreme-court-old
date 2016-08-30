@@ -38,6 +38,13 @@ function loadCases() {
 
         window.predict = predict.bind(window, predictions, features);
 
+        if (location.search.length)
+            predict(location.search.slice(1));
+
+        $("#input-case").addEventListener("input", function() {
+            predict(this.value);
+        });
+
         // newest to oldest
         predictions.sort((a, b) => b.date - a.date); 
 
@@ -47,8 +54,17 @@ function loadCases() {
 }
 
 function predict(predictions, features, caseNumber) {
+    smoothScroll($("#predict").getBoundingClientRect().top);
+
     let case_features = features.find(f => f.caseNumber === caseNumber);
+        if (!case_features) return;
     let prediction = predictions.find(p => p.caseNumber === caseNumber);
+
+    $("#caseNo").innerHTML = "dkt. " + caseNumber;
+    $("#p_name").innerHTML = prediction.petitioner;
+    $("#r_name").innerHTML = prediction.respondent;
+    $("#p_prob").innerHTML = 10 * Math.round(10 * prediction.prob) + "%";
+    $("#r_prob").innerHTML = 10 * Math.round(10 - 10 * prediction.prob) + "%";
 }
 
 function initRecent(recent) {

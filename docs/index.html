@@ -55,25 +55,28 @@
             <ul class="case-list"></ul>
         </section>
 
-        <h1 id="predict">Predict a Case</h1>
+        <section id="predict">
+            <h1>Predict a Case</h1>
 
-        <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-            veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-            commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-            velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
-            occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-        </p>
+            <input id="input-case" type="text" placeholder="Case number"></input>
 
-        <h1 id="about">About</h1>
+            <h2 id="caseNo"></h2>
+            <span id="p_name"></span>
+            <span id="p_prob"></span>
+            <br />
+            <span id="r_name"></span>
+            <span id="r_prob"></span>
+        </section>
 
-        <p>
-            These Supreme Court Predictions are made using machine learning
+        <section id="about">
+            <h1>About</h1>
+
+            <p>
+            These Supreme Court predictions are made using machine learning
             software that has examined hundreds of past cases and learned what
             to look for to make a successful prediction.
-        </p>
-        <p>
+            </p>
+            <p>
             It takes several steps to arrive at a prediction for a case. First,
             the software goes to the Supreme Court&rsquo;s website and downloads
             a transcript of the oral arguments. It then parses the transcript 
@@ -82,8 +85,8 @@
             also goes through the text of the transcript itself and collects 
             information, such as how many times each lawyer was interrupted, or
             how many words the justices spoke.
-        </p>
-        <p>
+            </p>
+            <p>
             Then the algorithm evaluates the case on a number of criteria: was
             the lawyer for the petitioners interrupted more than once every 71
             words? Was there more than one lawyer for the respondents? Were
@@ -95,23 +98,24 @@
             once every 71 words on average. The algorithm then combines all of
             this information into a final estimate of the chances for each side
             of winning the case.
-        </p>
-        <p>
+            </p>
+            <p>
             The technical name for this kind of prediction algorithm is a 
-            <a href="https://en.wikipedia.org/wiki/Naive_Bayes_classifier">Naive Bayes Classifier</a>.
+            <a href="https://en.wikipedia.org/wiki/Naive_Bayes_classifier" target="_blank">Naive Bayes Classifier</a>.
             Because of some of the assumptions that are made by the model, the
             probabilities that it estimates for each side are very rough and
             imprecise.  Other than giving some sense of the confidence of the
             algorithm, there's not much difference between a 56% chance and a
             92% one. 
-        </p>
-        <p>
+            </p>
+            <p>
             The model trains itself by looking at some past cases, while it
             leaves others for later so it can try to predict them without
             having seen them before.  That way, it&rsquo;s possible to get a
             clear sense of the model&rsquo;s accuracy.  Predicting over 750
             cases, the model was correct 75% of the time.
-        </p>
+            </p>
+        </section>
     </main>
 
     <footer>

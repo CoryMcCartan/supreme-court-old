@@ -101,8 +101,8 @@ function predict(entry, prior, thresholds) {
 
     for (let variable of thresholds) {
         let value = entry[variable.key];
-        prob_pet *= norm(value, variable.mean_pet, variable.var_pet);
-        prob_resp *= norm(value, variable.mean_resp, variable.var_resp);
+        prob_pet *= util.norm(value, variable.mean_pet, variable.var_pet);
+        prob_resp *= util.norm(value, variable.mean_resp, variable.var_resp);
     }
 
     return prob_pet / (prob_pet + prob_resp); // normalize
