@@ -67,8 +67,8 @@ function predict(predictions, features, caseNumber) {
     let prediction = predictions.find(p => p.caseNumber === caseNumber);
 
     $("#caseNo").innerHTML = "dkt. " + caseNumber;
-    $("#p_name").innerHTML = prediction.petitioner;
-    $("#r_name").innerHTML = prediction.respondent;
+    $("#p_name").innerHTML = prediction.petitioner + ", Petitioner";
+    $("#r_name").innerHTML = prediction.respondent + ", Respondent";
     $("#p_prob").innerHTML = 10 * Math.round(10 * prediction.prob) + "%";
     $("#r_prob").innerHTML = 10 * Math.round(10 - 10 * prediction.prob) + "%";
 
