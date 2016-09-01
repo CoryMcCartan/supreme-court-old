@@ -34,6 +34,7 @@ function loadCases() {
 
             return obj;
         });
+
         let features = d3.csvParse(f_text);
 
         window.predict = predict.bind(window, predictions, features);
@@ -41,19 +42,24 @@ function loadCases() {
         if (location.search.length)
             predict(location.search.slice(1));
 
-        $("#input-case").addEventListener("input", function() {
+        let predictInput = function() {
             predict(this.value);
-        });
+        };
+        $("#case-select").addEventListener("input", predictInput);
+        $("#case-select").addEventListener("change", predictInput);
 
         // newest to oldest
         predictions.sort((a, b) => b.date - a.date); 
 
         let recent = predictions.slice(0, recentCases);
         initRecent(recent);
+
+        setupAutocomplete(predictions);
     });
 }
 
 function predict(predictions, features, caseNumber) {
+    caseNumber = caseNumber.split(/ +/)[0];
     smoothScroll($("#predict").getBoundingClientRect().top);
 
     let case_features = features.find(f => f.caseNumber === caseNumber);
@@ -65,6 +71,17 @@ function predict(predictions, features, caseNumber) {
     $("#r_name").innerHTML = prediction.respondent;
     $("#p_prob").innerHTML = 10 * Math.round(10 * prediction.prob) + "%";
     $("#r_prob").innerHTML = 10 * Math.round(10 - 10 * prediction.prob) + "%";
+
+    let predicted = Math.round(prediction.prob) ? "#p_actual" : "#r_actual"
+    let other = Math.round(prediction.prob) ? "#r_actual" : "#p_actual"
+    if (prediction.correct === 0) {
+       $(other).innerHTML = "<b>&times;</b>"
+       $(predicted).innerHTML = "";
+    }
+    else if (prediction.correct === 1) {
+       $(predicted).innerHTML = "<b>&times;</b>"
+       $(other).innerHTML = "";
+    }
 }
 
 function initRecent(recent) {
@@ -97,6 +114,19 @@ function initRecent(recent) {
         .classed("wrong", d => d.correct === 0)
         .classed("party", true)
         .text(d => d.respondent);
+}
+
+function setupAutocomplete(cases) {
+    cases = cases.map(c => `${pad(c.caseNumber, 10)} ${c.petitioner} v. ${c.respondent}`.trim());
+    new autoComplete({
+        selector: "input#case-select",
+        minChars: 2,
+        source: (term, suggest) => {
+            term = term.toLowerCase();
+            suggest(cases.filter(c => c.toLowerCase().includes(term)));
+        },
+        onSelect: (e, term) => predict(term),
+    });
 }
 
 function setupScrolling() {
@@ -146,6 +176,10 @@ function smoothScroll(target) {
 
 window.$ = s => document.querySelector(s);
 window.$$ = s => document.querySelectorAll(s);
+
+function pad(str, n) {
+    return (str + new Array(n).fill(" ").join("")).slice(0, n);
+}
 
 if (navigator.serviceWorker) {
     navigator.serviceWorker.register("service-worker.js", {

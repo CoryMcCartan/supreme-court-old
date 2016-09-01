@@ -9,6 +9,7 @@ var base = location.pathname.replace("service-worker.js", "");
 var STATIC_CACHE = [
     base + "assets/flag.gif",
     base + "assets/court.jpg",
+    base + "js/auto-complete.min.js",
     "https://d3js.org/d3.v4.min.js",
     "https://fonts.googleapis.com/css?family=Old+Standard+TT:400,700|Roboto:300",
 ];

@@ -133,6 +133,24 @@ section h1
 #caseNo
     font-variant: small-caps
 
+.parties
+    font-family: $serif
+    line-height: 0.95
+    border-radius: 3px
+    border-collapse: collapse
+    width: 100%
+
+    th, td
+        padding: 0.25em 0.5em 0.35em 0.25em
+        text-align: center
+
+    th
+        border-bottom: 1px solid black
+
+    th:first-child, td:first-child
+        text-align: left
+
+
 h1.title
     color: white
     position: relative
@@ -184,6 +202,15 @@ button.nav:hover
     cursor: pointer
     color: #fff
 
+input[type=text]
+    border: none
+    padding: 0.75em
+    font-family: "Roboto", sans-serif
+    outline: none
+    width: 100%
+    font-size: 1rem
+    border-radius: 2px
+
 
 @media #{$mobile} 
 
@@ -216,3 +243,36 @@ button.nav:hover
         display: none
     nav.mobile
         display: flex
+
+/* AUTOCOMPLETE LIBRARY */
+.autocomplete-suggestions 
+    text-align: left
+    cursor: default
+    border: 1px solid #ccc
+    border-top: 0
+    background: #fff
+    box-shadow: -1px 1px 3px rgba(0,0,0,.1)
+    position: absolute
+    display: none
+    z-index: 9999
+    max-height: 254px
+    overflow: hidden
+    overflow-y: auto
+    box-sizing: border-box
+
+.autocomplete-suggestion  
+    position: relative
+    padding: 0 .6em
+    line-height: 23px
+    white-space: nowrap
+    overflow: hidden
+    text-overflow: ellipsis
+    font-size: 1.02em
+    color: #333
+
+.autocomplete-suggestion b  
+    font-weight: normal
+    color: #1f8dd6
+
+.autocomplete-suggestion.selected  
+    background: #f0f0f0
