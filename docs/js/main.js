@@ -26,8 +26,8 @@ function loadCases() {
 
             obj.petitioner = obj.petitioner.replace(", ET AL.", " et al. ");
             obj.respondent = obj.respondent.replace(", ET AL.", " et al. ");
-            obj.petitioner = obj.petitioner.split(",")[0];
-            obj.respondent = obj.respondent.split(",")[0];
+            obj.petitioner = obj.petitioner.split(",")[0].trim();
+            obj.respondent = obj.respondent.split(",")[0].trim();
             if (obj.respondent.endsWith("."))
                 obj.respondent = obj.respondent.slice(0, -1);
 
@@ -59,6 +59,8 @@ function loadCases() {
 }
 
 function predict(predictions, features, caseNumber) {
+    $("#predictData").hidden = false;
+
     caseNumber = caseNumber.split(/ +/)[0];
     smoothScroll($("#predict").getBoundingClientRect().top);
 
@@ -69,19 +71,23 @@ function predict(predictions, features, caseNumber) {
     $("#caseNo").innerHTML = "dkt. " + caseNumber;
     $("#p_name").innerHTML = prediction.petitioner + ", Petitioner";
     $("#r_name").innerHTML = prediction.respondent + ", Respondent";
-    $("#p_prob").innerHTML = 10 * Math.round(10 * prediction.prob) + "%";
-    $("#r_prob").innerHTML = 10 * Math.round(10 - 10 * prediction.prob) + "%";
 
-    let predicted = Math.round(prediction.prob) ? "#p_actual" : "#r_actual"
-    let other = Math.round(prediction.prob) ? "#r_actual" : "#p_actual"
-    if (prediction.correct === 0) {
-       $(other).innerHTML = "<b>&times;</b>"
-       $(predicted).innerHTML = "";
-    }
-    else if (prediction.correct === 1) {
-       $(predicted).innerHTML = "<b>&times;</b>"
-       $(other).innerHTML = "";
-    }
+    let pet = $("#p_prob");
+    let resp = $("#r_prob");
+    pet.innerHTML = 10 * Math.round(10 * prediction.prob) + "%";
+    resp.innerHTML = 10 * Math.round(10 - 10 * prediction.prob) + "%";
+    let min = innerWidth > 800 ? 8 : innerWidth > 460 ? 14 : 20;
+    let factor = 100 - 2*min;
+    pet.style.flexGrow = 100 * prediction.prob;
+    resp.style.flexGrow = 100 - 100 * prediction.prob;
+
+    [resp, pet].map(el => el.className = "");
+    if (prediction.correct === 1) // we know the outcome
+        [resp, pet][case_features.side].className = "right";
+    else if (prediction.correct === 0) // we know the outcome
+        [pet, resp][case_features.side].className = "wrong";
+
+    [resp, pet][case_features.side].innerHTML += " &check;";
 }
 
 function initRecent(recent) {
@@ -117,7 +123,7 @@ function initRecent(recent) {
 }
 
 function setupAutocomplete(cases) {
-    cases = cases.map(c => `${pad(c.caseNumber, 10)} ${c.petitioner} v. ${c.respondent}`.trim());
+    cases = cases.map(c => `${pad(c.caseNumber, 10)} ${c.petitioner} v. ${c.respondent}`);
     new autoComplete({
         selector: "input#case-select",
         minChars: 2,

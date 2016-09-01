@@ -9,6 +9,7 @@ $mobile: "(max-width: 680px)"
 $verysmall: "(max-width: 380px)"
 
 $blue: #5089c7
+$gray: #e5e5e2
 $sans: "Roboto", sans-serif
 $serif: "Old Standard TT", serif
 
@@ -17,7 +18,7 @@ $serif: "Old Standard TT", serif
 
 body 
     font-family: $sans
-    background-color: #e5e5e2
+    background-color: $gray
     margin: 0
 
 
@@ -48,7 +49,7 @@ span.logo
     font-family: $serif
     font-size: 1.2rem
 
-span.spacer
+.spacer
     flex-grow: 1
 
 main
@@ -113,6 +114,12 @@ ul.case-list
         padding: 0.4em
         border-radius: 3px
 
+    .vs
+        margin: 0.3em 2em 0.3em 2em
+        font-variant: normal
+        font-family: "Times New Roman", serif
+        font-style: italic
+
     .winning
         background-color: $blue
         color: white
@@ -121,34 +128,43 @@ ul.case-list
     .winning.wrong
         background-color: #e44
 
-    .vs
-        margin: 0.3em 2em 0.3em 2em
-        font-variant: normal
-        font-family: "Times New Roman", serif
-        font-style: italic
-
 section h1
     font-size: 2em
 
 #caseNo
     font-variant: small-caps
 
-.parties
+#party_names
+    display: flex
     font-family: $serif
-    line-height: 0.95
-    border-radius: 3px
-    border-collapse: collapse
-    width: 100%
+    font-variant: small-caps
 
-    th, td
-        padding: 0.25em 0.5em 0.35em 0.25em
-        text-align: center
+#party_probs
+    margin: 0.5em 0
+    display: flex
+#party_probs span
+    height: 2em
+    font-size: 1.5rem
+    line-height: 2em
+    font-weight: bold
+    display: inline-block
+    margin: -1px
+    flex-basis: 3.5em
+    text-align: right
+    background-color: $blue
+    color: white
+    padding: 0 0.5em
+    border-radius: 0 3px 3px 0
 
-    th
-        border-bottom: 1px solid black
+#party_probs span.right
+    background-color: #3c4
+#party_probs span.wrong
+    background-color: #e44
 
-    th:first-child, td:first-child
-        text-align: left
+#party_probs span:first-child
+    text-align: left
+    border-radius: 3px 0 0 3px
+    margin-right: 3px
 
 
 h1.title

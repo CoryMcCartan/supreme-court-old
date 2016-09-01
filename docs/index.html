@@ -60,24 +60,19 @@
 
             <input id="case-select" type="text" placeholder="Case number"></input>
 
-            <h2 id="caseNo"></h2>
-            <table class="parties">
-                <tr>
-                    <th>Party</th>
-                    <th>Probability</th>
-                    <th>Actual</th>
-                </tr>
-                <tr>
-                    <td id="p_name"></td>
-                    <td id="p_prob"></td>
-                    <td id="p_actual"></td>
-                </tr>
-                <tr>
-                    <td id="r_name"></td>
-                    <td id="r_prob"></td>
-                    <td id="r_actual"></td>
-                </tr>
-            </table>
+            <div id="predictData" hidden>
+                <h2 id="caseNo"></h2>
+
+                <div id="party_names">
+                    <span id="p_name"></span>
+                    <span class="spacer">&nbsp;</span>
+                    <span id="r_name"></span>
+                </div>
+                <div id="party_probs">
+                    <span id="p_prob"></span>
+                    <span id="r_prob"></span>
+                </div>
+            </div>
         </section>
 
         <section id="about">
