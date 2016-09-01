@@ -46,6 +46,7 @@ function * main() {
         // close 8-justice cases => split court means affirm
         if (Math.abs(0.5 - prob) < 0.05 && x.j_num === 8 && prediction === 1) {
             prediction = 0;
+            prob = 0.499;
             console.log("Flipped.");
         }
 
