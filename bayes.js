@@ -9,6 +9,7 @@
 
 let args = require("yargs")
     .default("feature_file", "data/features.csv")
+    .default("outcomes_file", "data/outcomes.csv")
     .default("threshold_file", "data/thresholds.csv")
     .default("all", false)
     .help("h").alias("h", "help")
@@ -17,9 +18,10 @@ let util = require("./util.js");
 
 function * main() {
     let data = yield util.loadCSV(args.feature_file);
+    let outcomes = yield util.loadCSV(args.outcomes_file);
     let _thresholds = yield util.loadCSV(args.threshold_file);
 
-    util.prepData(data);
+    data = util.prepData(data, outcomes);
     let prior = +_thresholds[0].likelihood;
     let thresholds = _thresholds.slice(1);
 

@@ -95,13 +95,24 @@ function range(data, key) {
     return [min, max];
 }
 
-function prepData(data) {
+function prepData(data, outcomes) {
     for (let entry of data) {
         entry.votes = entry.side === PETITIONER ? 
             entry.margin : entry.j_num - entry.margin;
-        entry.p_minus_r = +entry.p_interruptions - +entry.r_interruptions;
-        entry.counsel_difference = +entry.p_num_counsel - +entry.r_num_counsel;
+        entry.int_diff = +entry.p_interruptions - +entry.r_interruptions;
+        entry.words_diff = +entry.p_words - +entry.r_words;
+        entry.counsel_diff = +entry.p_num_counsel - +entry.r_num_counsel;
+
+        let outcome = outcomes.find(o => o.docket === entry.caseNumber);
+        if (!outcome) continue;
+        entry.lower_dir = +outcome.lcDispositionDirection;
+        entry.issue = +outcome.issueArea;
+        entry.natural_court = +outcome.naturalCourt;
+        entry.p_type = +outcome.petitioner;
+        entry.r_type = +outcome.respondent;
     }
+
+    return data.filter(e => "issue" in e);
 }
 
 function * crossValidate(data, k=10) {

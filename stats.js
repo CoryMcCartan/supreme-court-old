@@ -9,9 +9,10 @@
 
 let args = require("yargs")
     .default("k", 10)
-    .default("n", 150).alias("n", "num_steps")
-    .default("o", 100).alias("o", "optimize_steps")
+    .default("n", 180).alias("n", "num_steps")
+    .default("o", 10).alias("o", "optimize_steps")
     .default("feature_file", "data/features.csv")
+    .default("outcomes_file", "data/outcomes.csv")
     .default("out_file", "data/thresholds.csv")
     .help("h").alias("h", "help")
     .argv;
@@ -24,8 +25,9 @@ const RESPONDENT = 0;
 
 function * main() {
     let data = yield util.loadCSV(args.feature_file);
+    let outcomes = yield util.loadCSV(args.outcomes_file);
 
-    util.prepData(data);
+    data = util.prepData(data, outcomes);
 
     let accuracy = 0;
     let precision = 0;
@@ -64,8 +66,9 @@ function * main() {
 
 function findThresholds(data, _thresholds = []) {
     let x_keys = [
-        "p_minus_r",
-        "counsel_difference",
+        "int_diff",
+        "words_diff",
+        "counsel_diff",
         "p_interruptions",
         "p_words",
         "p_times",
@@ -84,6 +87,11 @@ function findThresholds(data, _thresholds = []) {
         "j_laughter",
         "j_num",
         "j_num_int_by",
+        "lower_dir",
+        "issue",
+        "natural_court",
+        "p_type",
+        "r_type",
     ];
 
     let force_thresholds = {
@@ -147,6 +155,15 @@ function findThresholds(data, _thresholds = []) {
             continue;
         thresholds[i].threshold = results.x[i]; 
     }
+
+    for (let i = 0; i < 3; i++) {
+        for (let variable of thresholds) {
+            if (variable.key in force_thresholds)
+                continue;
+            variable = optimizeThreshold(data, variable, thresholds, prior);
+        }
+    }
+
     console.log(`ACCURACY ${Math.round(100 * bayes.evaluate(prior, thresholds, data)[0])}%`);
 
     thresholds.unshift({
