@@ -53,7 +53,7 @@ function evaluate(prior, thresholds, data) {
     let recall_n = 0;
 
     for (let entry of data) {
-        let prob = predict_boolean(entry, prior, thresholds);
+        let prob = predict(entry, prior, thresholds);
         let predicted = Math.round(prob);
         // close 8-justice cases => split court means affirm
         if (Math.abs(0.5 - prob) < 0.05 && entry.j_num === 8 && predicted === 1) {

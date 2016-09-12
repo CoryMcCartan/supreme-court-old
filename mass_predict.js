@@ -41,7 +41,7 @@ function * main() {
         let x = parser.createFeatures(argument);
         x.j_num = argument.num_justices || 9;
 
-        let prob = bayes.predict_boolean(x, prior, thresholds);
+        let prob = bayes.predict(x, prior, thresholds);
         let prediction = Math.round(prob);
         // close 8-justice cases => split court means affirm
         if (Math.abs(0.5 - prob) < 0.05 && x.j_num === 8 && prediction === 1) {
