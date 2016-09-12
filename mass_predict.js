@@ -9,6 +9,7 @@
 
 let args = require("yargs")
     .default("threshold_file", "data/thresholds.csv")
+    .default("outcomes_file", "data/outcomes.csv")
     .default("predictions_file", "data/predictions.csv")
     .default("arguments_dir", "arguments/")
     .help("h").alias("h", "help")
@@ -22,6 +23,7 @@ function * main() {
     // get all json files in arguments directory
     let files = (yield fs.readdir(args.arguments_dir)).filter(f => f.endsWith(".json"));
     let predictions = yield util.loadCSV(args.predictions_file);
+    let outcomes = yield util.loadCSV(args.outcomes_file);
 
     let _thresholds = yield util.loadCSV(args.threshold_file);
     let prior = +_thresholds[0].likelihood;
@@ -40,8 +42,10 @@ function * main() {
 
         let x = parser.createFeatures(argument);
         x.j_num = argument.num_justices || 9;
+        [x] = util.prepData([x], outcomes);
 
         let prob = bayes.predict(x, prior, thresholds);
+        prob = 0.8*prob + 0.1; // make less extreme
         let prediction = Math.round(prob);
         // close 8-justice cases => split court means affirm
         if (Math.abs(0.5 - prob) < 0.05 && x.j_num === 8 && prediction === 1) {
